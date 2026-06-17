@@ -1,4 +1,5 @@
 import React from 'react';
+import IdentityAccess from './pages/IdentityAccess';
 
 const stats = [
   { label: 'Total Employees', value: '1,284', change: '+12 this month' },
@@ -29,7 +30,9 @@ const statusStyle = {
   Offboarding: { backgroundColor: '#fdf6f4', color: '#C9ADA7', border: '1px solid #C9ADA7' },
 };
 
-function Dashboard({ activePage }) {
+ function Dashboard({ activePage }) {
+  if (activePage === 'Identity & Access') return <IdentityAccess />;
+
   return (
     <div className="p-6">
 
