@@ -1,5 +1,7 @@
 import React from 'react';
 import IdentityAccess from './pages/IdentityAccess';
+import Organisation from './pages/Organisation';
+
 
 const stats = [
   { label: 'Total Employees', value: '1,284', change: '+12 this month' },
@@ -32,6 +34,7 @@ const statusStyle = {
 
  function Dashboard({ activePage }) {
   if (activePage === 'Identity & Access') return <IdentityAccess />;
+  if (activePage === 'Organisation') return <Organisation />;
 
   return (
     <div className="p-6">
