@@ -1,23 +1,23 @@
-import logo from './logo.svg';
-import './App.css';
+import React, { useState } from 'react';
+import Sidebar from './Sidebar';
+import Dashboard from './Dashboard';
+import RightPanel from './RightPanel';
 
 function App() {
+  const [activePage, setActivePage] = useState('Dashboard');
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: '#F2E9E4' }}>
+      {/* LEFT SIDEBAR */}
+      <Sidebar activePage={activePage} setActivePage={setActivePage} />
+
+      {/* MIDDLE MAIN */}
+      <div className="flex-1 overflow-y-auto">
+        <Dashboard activePage={activePage} />
+      </div>
+
+      {/* RIGHT PANEL */}
+      <RightPanel />
     </div>
   );
 }
