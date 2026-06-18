@@ -1,6 +1,8 @@
 import React from 'react';
 import IdentityAccess from './pages/IdentityAccess';
 import Organisation from './pages/Organisation';
+import Onboarding from './pages/Onboarding';
+
 
 
 const stats = [
@@ -32,10 +34,11 @@ const statusStyle = {
   Offboarding: { backgroundColor: '#fdf6f4', color: '#C9ADA7', border: '1px solid #C9ADA7' },
 };
 
- function Dashboard({ activePage }) {
+   
+  function Dashboard({ activePage }) {
   if (activePage === 'Identity & Access') return <IdentityAccess />;
   if (activePage === 'Organisation') return <Organisation />;
-
+  if (activePage === 'Onboarding') return <Onboarding />;
   return (
     <div className="p-6">
 
