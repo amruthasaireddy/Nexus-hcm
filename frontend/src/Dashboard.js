@@ -3,6 +3,7 @@ import IdentityAccess from './pages/IdentityAccess';
 import Organisation from './pages/Organisation';
 import Onboarding from './pages/Onboarding';
 import Offboarding from './pages/Offboarding';
+import ITAssets from './pages/ITAssets';
 
 
 
@@ -41,6 +42,7 @@ const statusStyle = {
   if (activePage === 'Organisation') return <Organisation />;
   if (activePage === 'Onboarding') return <Onboarding />;
   if (activePage === 'Offboarding') return <Offboarding />;
+  if (activePage === 'IT Assets') return <ITAssets />;
   return (
     <div className="p-6">
 
