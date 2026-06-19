@@ -1,4 +1,4 @@
-import React from 'react';
+ import React, { useState } from 'react';
 
 const healthData = [
   { name: 'Identity & Access', percent: 98 },
@@ -15,6 +15,32 @@ const alerts = [
 ];
 
 function RightPanel() {
+  const [question, setQuestion] = useState('');
+  const [answer, setAnswer] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleAsk = async () => {
+    if (!question.trim()) return;
+    setLoading(true);
+    setAnswer('');
+    try {
+      const res = await fetch('http://127.0.0.1:8000/ai/insights', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          question: question,
+          context: 'NexusHCM enterprise HR platform with 1284 employees'
+        })
+      });
+      const data = await res.json();
+      setAnswer(data.answer);
+    } catch (err) {
+      setAnswer('AI unavailable. Check backend.');
+    }
+    setLoading(false);
+    setQuestion('');
+  };
+
   return (
     <div className="w-56 h-screen overflow-y-auto flex-shrink-0 border-l p-4"
       style={{ backgroundColor: '#fff', borderColor: '#C9ADA7' }}>
@@ -31,7 +57,10 @@ function RightPanel() {
           </div>
           <div className="h-1 rounded-full" style={{ backgroundColor: '#F2E9E4' }}>
             <div className="h-1 rounded-full"
-              style={{ width: `${item.percent}%`, background: 'linear-gradient(90deg, #9A8C98, #22223B)' }}>
+              style={{
+                width: `${item.percent}%`,
+                background: 'linear-gradient(90deg, #9A8C98, #22223B)'
+              }}>
             </div>
           </div>
         </div>
@@ -44,8 +73,10 @@ function RightPanel() {
         AI Alerts
       </p>
       {alerts.map((alert, i) => (
-        <div key={i} className="flex gap-2 pb-3 mb-3 border-b" style={{ borderColor: '#F2E9E4' }}>
-          <div className="w-2 h-2 rounded-full mt-1 flex-shrink-0" style={{ backgroundColor: '#C9ADA7' }}></div>
+        <div key={i} className="flex gap-2 pb-3 mb-3 border-b"
+          style={{ borderColor: '#F2E9E4' }}>
+          <div className="w-2 h-2 rounded-full mt-1 flex-shrink-0"
+            style={{ backgroundColor: '#C9ADA7' }}></div>
           <div>
             <p className="text-xs font-medium" style={{ color: '#22223B' }}>{alert.text}</p>
             <p className="text-xs mt-0.5" style={{ color: '#9A8C98' }}>{alert.sub}</p>
@@ -69,15 +100,54 @@ function RightPanel() {
 
       <hr className="my-4" style={{ borderColor: '#F2E9E4' }} />
 
-      {/* AI Insight */}
-      <div className="rounded-lg p-3" style={{ backgroundColor: '#F2E9E4' }}>
-        <div className="flex items-center gap-2 mb-2">
-          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: '#22223B' }}></div>
-          <p className="text-xs uppercase tracking-widest" style={{ color: '#4A4E69' }}>AI Insight</p>
+      {/* AI Assistant */}
+      <p className="text-xs uppercase tracking-widest mb-3" style={{ color: '#9A8C98' }}>
+        AI Assistant
+      </p>
+
+      {/* Answer */}
+      {loading && (
+        <div className="p-2 rounded-lg mb-2" style={{ backgroundColor: '#F2E9E4' }}>
+          <p className="text-xs" style={{ color: '#9A8C98' }}>AI thinking...</p>
         </div>
-        <p className="text-xs leading-relaxed" style={{ color: '#4A4E69' }}>
-          3 anomalies detected in Identity module. Review access logs for Arjun Mehta immediately.
-        </p>
+      )}
+      {answer && (
+        <div className="p-2 rounded-lg mb-2" style={{ backgroundColor: '#F2E9E4' }}>
+          <p className="text-xs leading-relaxed" style={{ color: '#4A4E69' }}>{answer}</p>
+        </div>
+      )}
+
+      {/* Quick Questions */}
+      <div className="space-y-1 mb-3">
+        {[
+          'How many employees onboarding?',
+          'Any security alerts?',
+          'Benefits enrollment status?',
+        ].map((q) => (
+          <button key={q}
+            onClick={() => { setQuestion(q); }}
+            className="w-full text-left text-xs p-2 rounded-lg border"
+            style={{ backgroundColor: '#F2E9E4', borderColor: '#C9ADA7', color: '#4A4E69' }}>
+            {q}
+          </button>
+        ))}
+      </div>
+
+      {/* Input */}
+      <div className="flex flex-col gap-2">
+        <input
+          className="w-full p-2 rounded-lg text-xs border outline-none"
+          style={{ borderColor: '#C9ADA7', color: '#22223B', backgroundColor: '#F2E9E4' }}
+          placeholder="Ask AI anything..."
+          value={question}
+          onChange={(e) => setQuestion(e.target.value)}
+          onKeyPress={(e) => e.key === 'Enter' && handleAsk()}
+        />
+        <button onClick={handleAsk}
+          className="w-full py-2 rounded-lg text-xs font-medium"
+          style={{ backgroundColor: '#22223B', color: '#F2E9E4' }}>
+          Ask AI
+        </button>
       </div>
     </div>
   );

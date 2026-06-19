@@ -41,16 +41,23 @@ function PolicyKB() {
     p.category.toLowerCase().includes(search.toLowerCase())
   );
 
-  const handleAsk = (question) => {
+   const handleAsk = async (question) => {
     const q = question || aiQuestion;
     if (!q.trim()) return;
     setAiLoading(true);
     setAiAnswer('');
-    setTimeout(() => {
-      const found = faqs.find(f => f.q.toLowerCase().includes(q.toLowerCase().split(' ')[0]));
-      setAiAnswer(found ? found.a : 'Based on company policies, please contact HR for specific queries about this topic. You can also browse the policy documents below for detailed information.');
-      setAiLoading(false);
-    }, 1000);
+    try {
+      const res = await fetch('http://127.0.0.1:8000/ai/policy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question: q })
+      });
+      const data = await res.json();
+      setAiAnswer(data.answer);
+    } catch (err) {
+      setAiAnswer('Sorry, AI is not available right now. Please try again.');
+    }
+    setAiLoading(false);
     setAiQuestion('');
   };
 
