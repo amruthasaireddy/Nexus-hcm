@@ -5,6 +5,7 @@ import Onboarding from './pages/Onboarding';
 import Offboarding from './pages/Offboarding';
 import ITAssets from './pages/ITAssets';
 import PolicyKb from './pages/PolicyKb';
+import BenefitsAdmin from './pages/BenefitsAdmin';
 
 
 
@@ -45,6 +46,7 @@ const statusStyle = {
   if (activePage === 'Offboarding') return <Offboarding />;
   if (activePage === 'IT Assets') return <ITAssets />;
   if (activePage === 'Policy KB') return <PolicyKb />;
+  if (activePage === 'Benefits Admin') return <BenefitsAdmin />;
   return (
     <div className="p-6">
 
