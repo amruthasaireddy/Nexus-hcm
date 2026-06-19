@@ -2,6 +2,7 @@ import React from 'react';
 import IdentityAccess from './pages/IdentityAccess';
 import Organisation from './pages/Organisation';
 import Onboarding from './pages/Onboarding';
+import Offboarding from './pages/Offboarding';
 
 
 
@@ -39,6 +40,7 @@ const statusStyle = {
   if (activePage === 'Identity & Access') return <IdentityAccess />;
   if (activePage === 'Organisation') return <Organisation />;
   if (activePage === 'Onboarding') return <Onboarding />;
+  if (activePage === 'Offboarding') return <Offboarding />;
   return (
     <div className="p-6">
 
