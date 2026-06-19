@@ -4,6 +4,7 @@ import Organisation from './pages/Organisation';
 import Onboarding from './pages/Onboarding';
 import Offboarding from './pages/Offboarding';
 import ITAssets from './pages/ITAssets';
+import PolicyKb from './pages/PolicyKb';
 
 
 
@@ -43,6 +44,7 @@ const statusStyle = {
   if (activePage === 'Onboarding') return <Onboarding />;
   if (activePage === 'Offboarding') return <Offboarding />;
   if (activePage === 'IT Assets') return <ITAssets />;
+  if (activePage === 'Policy KB') return <PolicyKb />;
   return (
     <div className="p-6">
 
