@@ -1,13 +1,4 @@
-import React, { useState } from 'react';
-
-const employees = [
-  { id: 'EMP001', name: 'Ravi Kumar', dept: 'Engineering', plan: 'Premium', health: true, dental: true, vision: false, life: true, status: 'Enrolled' },
-  { id: 'EMP002', name: 'Priya Sharma', dept: 'HR', plan: 'Standard', health: true, dental: false, vision: true, life: true, status: 'Enrolled' },
-  { id: 'EMP003', name: 'Arjun Mehta', dept: 'Engineering', plan: 'Premium', health: true, dental: true, vision: true, life: true, status: 'Enrolled' },
-  { id: 'EMP004', name: 'Sneha Reddy', dept: 'Product', plan: 'Basic', health: true, dental: false, vision: false, life: false, status: 'Partial' },
-  { id: 'EMP005', name: 'Kiran Patel', dept: 'Analytics', plan: 'Standard', health: true, dental: true, vision: false, life: true, status: 'Enrolled' },
-  { id: 'EMP006', name: 'Meera Nair', dept: 'Design', plan: 'Basic', health: true, dental: false, vision: false, life: false, status: 'Pending' },
-];
+import React, { useState, useEffect } from 'react';
 
 const plans = [
   { name: 'Basic Plan', price: '₹2,400/mo', employees: 342, coverage: 'Health only', color: '#F2E9E4' },
@@ -28,12 +19,59 @@ const planStyle = {
 };
 
 function BenefitsAdmin() {
+  const API = 'http://127.0.0.1:8000';
+  const [employees, setEmployees] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('Overview');
   const [search, setSearch] = useState('');
+  const [showForm, setShowForm] = useState(false);
+  const [newEmployee, setNewEmployee] = useState({ name: '', dept: '', plan: 'Standard' });
+
+  useEffect(() => {
+    fetchBenefits();
+  }, []);
+
+  const fetchBenefits = async () => {
+    try {
+      const res = await fetch(`${API}/benefits`);
+      const data = await res.json();
+      setEmployees(data);
+      setLoading(false);
+    } catch (err) {
+      console.error('Error fetching benefits', err);
+      setLoading(false);
+    }
+  };
+
+  const handleAddEmployee = async () => {
+    if (!newEmployee.name || !newEmployee.dept) return;
+    try {
+      const res = await fetch(`${API}/benefits`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newEmployee)
+      });
+      const data = await res.json();
+      setEmployees([...employees, data]);
+      setNewEmployee({ name: '', dept: '', plan: 'Standard' });
+      setShowForm(false);
+    } catch (err) {
+      console.error('Error adding employee benefit', err);
+    }
+  };
+
+  const handleDeleteEmployee = async (docId) => {
+    try {
+      await fetch(`${API}/benefits/${docId}`, { method: 'DELETE' });
+      setEmployees(employees.filter(e => e.docId !== docId));
+    } catch (err) {
+      console.error('Error deleting employee benefit', err);
+    }
+  };
 
   const filtered = employees.filter(e =>
-    e.name.toLowerCase().includes(search.toLowerCase()) ||
-    e.dept.toLowerCase().includes(search.toLowerCase())
+    (e.name || '').toLowerCase().includes(search.toLowerCase()) ||
+    (e.dept || '').toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -45,17 +83,55 @@ function BenefitsAdmin() {
           <h1 className="text-lg font-medium" style={{ color: '#22223B' }}>Benefits Administration</h1>
           <p className="text-xs mt-1" style={{ color: '#9A8C98' }}>Manage employee benefits and enrollment</p>
         </div>
-        <button className="text-xs px-4 py-2 rounded-lg font-medium"
+        <button onClick={() => setShowForm(true)}
+          className="text-xs px-4 py-2 rounded-lg font-medium"
           style={{ backgroundColor: '#22223B', color: '#F2E9E4' }}>
           + Add Benefit
         </button>
       </div>
 
+      {/* Add Employee Form */}
+      {showForm && (
+        <div className="p-4 rounded-xl border mb-4" style={{ backgroundColor: '#fff', borderColor: '#C9ADA7' }}>
+          <p className="text-xs uppercase tracking-widest mb-3" style={{ color: '#9A8C98' }}>Enroll Employee in Benefits</p>
+          <div className="grid grid-cols-3 gap-2 mb-3">
+            <input placeholder="Full Name" value={newEmployee.name}
+              onChange={(e) => setNewEmployee({ ...newEmployee, name: e.target.value })}
+              className="text-xs p-2 rounded-lg border outline-none"
+              style={{ borderColor: '#C9ADA7', backgroundColor: '#F2E9E4', color: '#22223B' }} />
+            <input placeholder="Department" value={newEmployee.dept}
+              onChange={(e) => setNewEmployee({ ...newEmployee, dept: e.target.value })}
+              className="text-xs p-2 rounded-lg border outline-none"
+              style={{ borderColor: '#C9ADA7', backgroundColor: '#F2E9E4', color: '#22223B' }} />
+            <select value={newEmployee.plan}
+              onChange={(e) => setNewEmployee({ ...newEmployee, plan: e.target.value })}
+              className="text-xs p-2 rounded-lg border outline-none"
+              style={{ borderColor: '#C9ADA7', backgroundColor: '#F2E9E4', color: '#22223B' }}>
+              <option>Basic</option>
+              <option>Standard</option>
+              <option>Premium</option>
+            </select>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={handleAddEmployee}
+              className="text-xs px-4 py-2 rounded-lg font-medium"
+              style={{ backgroundColor: '#22223B', color: '#F2E9E4' }}>
+              Save
+            </button>
+            <button onClick={() => setShowForm(false)}
+              className="text-xs px-4 py-2 rounded-lg font-medium border"
+              style={{ borderColor: '#C9ADA7', color: '#4A4E69' }}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Stats */}
       <div className="grid grid-cols-4 gap-3 mb-5">
         {[
-          { label: 'Total Enrolled', value: '1,102', change: '86% of employees' },
-          { label: 'Pending Enrollment', value: '182', change: 'Action required', alert: true },
+          { label: 'Total Enrolled', value: employees.length.toString(), change: 'Employees enrolled' },
+          { label: 'Pending Enrollment', value: employees.filter(e => e.status === 'Pending').length.toString(), change: 'Action required', alert: true },
           { label: 'Monthly Cost', value: '₹48L', change: 'Total benefits spend' },
           { label: 'AI Savings', value: '₹4.2L', change: 'Identified this quarter' },
         ].map((stat) => (
@@ -92,7 +168,6 @@ function BenefitsAdmin() {
       {activeTab === 'Overview' && (
         <div className="grid grid-cols-3 gap-4">
 
-          {/* Plans */}
           <div className="col-span-2 p-4 rounded-xl border" style={{ backgroundColor: '#fff', borderColor: '#C9ADA7' }}>
             <p className="text-xs uppercase tracking-widest mb-4" style={{ color: '#9A8C98' }}>Benefit Plans</p>
             <div className="grid grid-cols-3 gap-3 mb-6">
@@ -119,7 +194,6 @@ function BenefitsAdmin() {
               ))}
             </div>
 
-            {/* Coverage Breakdown */}
             <p className="text-xs uppercase tracking-widest mb-3" style={{ color: '#9A8C98' }}>
               Coverage Breakdown
             </p>
@@ -143,7 +217,6 @@ function BenefitsAdmin() {
             ))}
           </div>
 
-          {/* AI Recommendations */}
           <div className="flex flex-col gap-4">
             <div className="p-4 rounded-xl border" style={{ backgroundColor: '#F2E9E4', borderColor: '#C9ADA7' }}>
               <div className="flex items-center gap-2 mb-3">
@@ -164,7 +237,6 @@ function BenefitsAdmin() {
               </div>
             </div>
 
-            {/* Quick Stats */}
             <div className="p-4 rounded-xl border" style={{ backgroundColor: '#fff', borderColor: '#C9ADA7' }}>
               <p className="text-xs uppercase tracking-widest mb-3" style={{ color: '#9A8C98' }}>Quick Stats</p>
               {[
@@ -198,48 +270,62 @@ function BenefitsAdmin() {
               style={{ borderColor: '#C9ADA7', color: '#22223B', backgroundColor: '#F2E9E4' }}
             />
           </div>
-          <table className="w-full">
-            <thead>
-              <tr style={{ borderBottom: '1px solid #F2E9E4' }}>
-                {['Employee', 'Department', 'Plan', 'Health', 'Dental', 'Vision', 'Life', 'Status'].map((h) => (
-                  <th key={h} className="text-left pb-3 text-xs font-medium uppercase tracking-widest"
-                    style={{ color: '#9A8C98' }}>
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((emp) => (
-                <tr key={emp.id} style={{ borderBottom: '1px solid #F2E9E4' }}>
-                  <td className="py-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium"
-                        style={{ backgroundColor: '#22223B', color: '#F2E9E4' }}>
-                        {emp.name.split(' ').map(n => n[0]).join('')}
-                      </div>
-                      <span className="text-xs font-medium" style={{ color: '#22223B' }}>{emp.name}</span>
-                    </div>
-                  </td>
-                  <td className="py-3 text-xs" style={{ color: '#4A4E69' }}>{emp.dept}</td>
-                  <td className="py-3">
-                    <span className="text-xs px-2 py-0.5 rounded-full" style={planStyle[emp.plan]}>
-                      {emp.plan}
-                    </span>
-                  </td>
-                  <td className="py-3 text-center text-sm">{emp.health ? '✅' : '❌'}</td>
-                  <td className="py-3 text-center text-sm">{emp.dental ? '✅' : '❌'}</td>
-                  <td className="py-3 text-center text-sm">{emp.vision ? '✅' : '❌'}</td>
-                  <td className="py-3 text-center text-sm">{emp.life ? '✅' : '❌'}</td>
-                  <td className="py-3">
-                    <span className="text-xs px-2 py-0.5 rounded-full" style={statusStyle[emp.status]}>
-                      {emp.status}
-                    </span>
-                  </td>
+
+          {loading ? (
+            <p className="text-xs text-center py-6" style={{ color: '#9A8C98' }}>Loading...</p>
+          ) : filtered.length === 0 ? (
+            <p className="text-xs text-center py-6" style={{ color: '#9A8C98' }}>No employees enrolled yet. Click "+ Add Benefit"!</p>
+          ) : (
+            <table className="w-full">
+              <thead>
+                <tr style={{ borderBottom: '1px solid #F2E9E4' }}>
+                  {['Employee', 'Department', 'Plan', 'Health', 'Dental', 'Vision', 'Life', 'Status', 'Action'].map((h) => (
+                    <th key={h} className="text-left pb-3 text-xs font-medium uppercase tracking-widest"
+                      style={{ color: '#9A8C98' }}>
+                      {h}
+                    </th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filtered.map((emp) => (
+                  <tr key={emp.docId} style={{ borderBottom: '1px solid #F2E9E4' }}>
+                    <td className="py-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium"
+                          style={{ backgroundColor: '#22223B', color: '#F2E9E4' }}>
+                          {(emp.name || '').split(' ').map(n => n[0]).join('')}
+                        </div>
+                        <span className="text-xs font-medium" style={{ color: '#22223B' }}>{emp.name}</span>
+                      </div>
+                    </td>
+                    <td className="py-3 text-xs" style={{ color: '#4A4E69' }}>{emp.dept}</td>
+                    <td className="py-3">
+                      <span className="text-xs px-2 py-0.5 rounded-full" style={planStyle[emp.plan] || planStyle.Standard}>
+                        {emp.plan}
+                      </span>
+                    </td>
+                    <td className="py-3 text-center text-sm">{emp.health ? '✅' : '❌'}</td>
+                    <td className="py-3 text-center text-sm">{emp.dental ? '✅' : '❌'}</td>
+                    <td className="py-3 text-center text-sm">{emp.vision ? '✅' : '❌'}</td>
+                    <td className="py-3 text-center text-sm">{emp.life ? '✅' : '❌'}</td>
+                    <td className="py-3">
+                      <span className="text-xs px-2 py-0.5 rounded-full" style={statusStyle[emp.status] || statusStyle.Enrolled}>
+                        {emp.status}
+                      </span>
+                    </td>
+                    <td className="py-3">
+                      <button onClick={() => handleDeleteEmployee(emp.docId)}
+                        className="text-xs px-2 py-1 rounded-lg"
+                        style={{ backgroundColor: '#fef2f2', color: '#dc2626' }}>
+                        ✕
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       )}
 
