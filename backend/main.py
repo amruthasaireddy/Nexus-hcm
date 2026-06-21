@@ -287,3 +287,26 @@ async def add_benefit(emp: BenefitEmployee):
 async def delete_benefit(doc_id: str):
     fdb.collection('benefits').document(doc_id).delete()
     return {"message": "Benefit deleted"}
+@app.get("/dashboard/stats")
+async def get_dashboard_stats():
+    employees_count = len(list(fdb.collection('employees').stream()))
+    onboarding_count = len(list(fdb.collection('onboarding').stream()))
+    offboarding_count = len(list(fdb.collection('offboarding').stream()))
+    assets_count = len(list(fdb.collection('assets').stream()))
+    benefits_count = len(list(fdb.collection('benefits').stream()))
+
+    recent_employees = []
+    docs = fdb.collection('employees').limit(4).stream()
+    for doc in docs:
+        emp = doc.to_dict()
+        emp['docId'] = doc.id
+        recent_employees.append(emp)
+
+    return {
+        "totalEmployees": employees_count,
+        "activeOnboarding": onboarding_count,
+        "activeOffboarding": offboarding_count,
+        "totalAssets": assets_count,
+        "benefitsEnrolled": benefits_count,
+        "recentEmployees": recent_employees
+    }
