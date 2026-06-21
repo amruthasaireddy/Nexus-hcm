@@ -310,3 +310,39 @@ async def get_dashboard_stats():
         "benefitsEnrolled": benefits_count,
         "recentEmployees": recent_employees
     }
+class Department(BaseModel):
+    name: str
+    head: str
+    employees: int
+    budget: str
+
+@app.get("/departments")
+async def get_departments():
+    docs = fdb.collection('departments').stream()
+    items = []
+    for doc in docs:
+        item = doc.to_dict()
+        item['docId'] = doc.id
+        items.append(item)
+    return items
+
+@app.post("/departments")
+async def add_department(dept: Department):
+    count = len(list(fdb.collection('departments').stream()))
+    data = {
+        "id": f"DEPT{str(count + 1).zfill(3)}",
+        "name": dept.name,
+        "head": dept.head,
+        "employees": dept.employees,
+        "budget": dept.budget,
+        "health": 90,
+        "status": "Healthy"
+    }
+    doc_ref = fdb.collection('departments').add(data)
+    data['docId'] = doc_ref[1].id
+    return data
+
+@app.delete("/departments/{doc_id}")
+async def delete_department(doc_id: str):
+    fdb.collection('departments').document(doc_id).delete()
+    return {"message": "Department deleted"}

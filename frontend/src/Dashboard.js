@@ -50,14 +50,13 @@ function Dashboard({ activePage }) {
     { label: 'Active Offboarding', value: stats.activeOffboarding.toString(), change: 'Cases ongoing', alert: stats.activeOffboarding > 0 },
     { label: 'IT Assets', value: stats.totalAssets.toString(), change: 'Tracked in system' },
   ] : [];
-
-  const modules = stats ? [
-    { icon: '🔐', name: 'Identity & Access', count: `${stats.totalEmployees} identities` },
-    { icon: '🏢', name: 'Organisation', count: '12 departments' },
-    { icon: '🚀', name: 'Onboarding', count: `${stats.activeOnboarding} in progress` },
-    { icon: '📦', name: 'IT Assets', count: `${stats.totalAssets} assets` },
-    { icon: '📋', name: 'Policy KB', count: '98% AI resolved' },
-    { icon: '💊', name: 'Benefits Admin', count: `${stats.benefitsEnrolled} enrolled` },
+ const modules = stats ? [
+    { icon: '/id-card.png', name: 'Identity & Access', count: `${stats.totalEmployees} identities` },
+    { icon: '/connection.png', name: 'Organisation', count: '12 departments' },
+    { icon: '/handshake.png', name: 'Onboarding', count: `${stats.activeOnboarding} in progress` },
+    { icon: '/information-technology.png', name: 'IT Assets', count: `${stats.totalAssets} assets` },
+    { icon: '/privacy-policy.png', name: 'Policy KB', count: '98% AI resolved' },
+    { icon: '/recovery.png', name: 'Benefits Admin', count: `${stats.benefitsEnrolled} enrolled` },
   ] : [];
 
   return (
@@ -137,7 +136,7 @@ function Dashboard({ activePage }) {
               {modules.map((mod) => (
                 <div key={mod.name} className="p-3 rounded-lg border cursor-pointer"
                   style={{ backgroundColor: '#F2E9E4', borderColor: '#C9ADA7' }}>
-                  <div className="text-xl mb-2">{mod.icon}</div>
+                   <img src={mod.icon} alt={mod.name} className="w-6 h-6 mb-2" />
                   <p className="text-xs font-medium" style={{ color: '#22223B' }}>{mod.name}</p>
                   <p className="text-xs mt-1" style={{ color: '#9A8C98' }}>{mod.count}</p>
                 </div>
