@@ -1,15 +1,4 @@
-import React, { useState } from 'react';
-
-const assets = [
-  { id: 'AST001', name: 'MacBook Pro 14"', type: 'Laptop', assignedTo: 'Ravi Kumar', dept: 'Engineering', status: 'Assigned', condition: 'Good', purchased: 'Jan 2024' },
-  { id: 'AST002', name: 'iPhone 13', type: 'Mobile', assignedTo: 'Priya Sharma', dept: 'HR', status: 'Assigned', condition: 'Good', purchased: 'Mar 2024' },
-  { id: 'AST003', name: 'Dell Monitor 27"', type: 'Monitor', assignedTo: 'Arjun Mehta', dept: 'Engineering', status: 'Assigned', condition: 'Fair', purchased: 'Jun 2023' },
-  { id: 'AST004', name: 'MacBook Air M2', type: 'Laptop', assignedTo: 'Unassigned', dept: '-', status: 'Available', condition: 'New', purchased: 'May 2024' },
-  { id: 'AST005', name: 'iPad Pro', type: 'Tablet', assignedTo: 'Sneha Reddy', dept: 'Product', status: 'Assigned', condition: 'Good', purchased: 'Feb 2024' },
-  { id: 'AST006', name: 'HP LaserJet', type: 'Printer', assignedTo: 'Office', dept: 'Admin', status: 'Assigned', condition: 'Poor', purchased: 'Jan 2022' },
-  { id: 'AST007', name: 'Logitech MX Keys', type: 'Keyboard', assignedTo: 'Kiran Patel', dept: 'Analytics', status: 'Assigned', condition: 'Good', purchased: 'Apr 2024' },
-  { id: 'AST008', name: 'Dell XPS 15', type: 'Laptop', assignedTo: 'Unassigned', dept: '-', status: 'Maintenance', condition: 'Fair', purchased: 'Sep 2023' },
-];
+ import React, { useState, useEffect } from 'react';
 
 const maintenance = [
   { asset: 'HP LaserJet', type: 'Service', due: 'Today', priority: 'High' },
@@ -38,13 +27,60 @@ const priorityStyle = {
 };
 
 function ITAssets() {
+  const API = 'http://127.0.0.1:8000';
+  const [assets, setAssets] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [newAsset, setNewAsset] = useState({ name: '', type: '', assignedTo: 'Unassigned', dept: '', condition: 'New' });
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('All');
   const [activeTab, setActiveTab] = useState('Inventory');
 
+  useEffect(() => {
+    fetchAssets();
+  }, []);
+
+  const fetchAssets = async () => {
+    try {
+      const res = await fetch(`${API}/assets`);
+      const data = await res.json();
+      setAssets(data);
+      setLoading(false);
+    } catch (err) {
+      console.error('Error fetching assets', err);
+      setLoading(false);
+    }
+  };
+
+  const handleAddAsset = async () => {
+    if (!newAsset.name || !newAsset.type) return;
+    try {
+      const res = await fetch(`${API}/assets`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newAsset)
+      });
+      const data = await res.json();
+      setAssets([...assets, data]);
+      setNewAsset({ name: '', type: '', assignedTo: 'Unassigned', dept: '', condition: 'New' });
+      setShowForm(false);
+    } catch (err) {
+      console.error('Error adding asset', err);
+    }
+  };
+
+  const handleDeleteAsset = async (docId) => {
+    try {
+      await fetch(`${API}/assets/${docId}`, { method: 'DELETE' });
+      setAssets(assets.filter(a => a.docId !== docId));
+    } catch (err) {
+      console.error('Error deleting asset', err);
+    }
+  };
+
   const filtered = assets.filter(asset => {
-    const matchSearch = asset.name.toLowerCase().includes(search.toLowerCase()) ||
-      asset.id.toLowerCase().includes(search.toLowerCase());
+    const matchSearch = (asset.name || '').toLowerCase().includes(search.toLowerCase()) ||
+      (asset.id || '').toLowerCase().includes(search.toLowerCase());
     const matchFilter = filter === 'All' || asset.status === filter;
     return matchSearch && matchFilter;
   });
@@ -58,19 +94,66 @@ function ITAssets() {
           <h1 className="text-lg font-medium" style={{ color: '#22223B' }}>IT Asset Tracking</h1>
           <p className="text-xs mt-1" style={{ color: '#9A8C98' }}>Track and manage all IT assets across the organisation</p>
         </div>
-        <button className="text-xs px-4 py-2 rounded-lg font-medium"
+        <button onClick={() => setShowForm(true)}
+          className="text-xs px-4 py-2 rounded-lg font-medium"
           style={{ backgroundColor: '#22223B', color: '#F2E9E4' }}>
           + Add Asset
         </button>
       </div>
 
+      {/* Add Asset Form */}
+      {showForm && (
+        <div className="p-4 rounded-xl border mb-4" style={{ backgroundColor: '#fff', borderColor: '#C9ADA7' }}>
+          <p className="text-xs uppercase tracking-widest mb-3" style={{ color: '#9A8C98' }}>Add New Asset</p>
+          <div className="grid grid-cols-5 gap-2 mb-3">
+            <input placeholder="Asset Name" value={newAsset.name}
+              onChange={(e) => setNewAsset({ ...newAsset, name: e.target.value })}
+              className="text-xs p-2 rounded-lg border outline-none"
+              style={{ borderColor: '#C9ADA7', backgroundColor: '#F2E9E4', color: '#22223B' }} />
+            <input placeholder="Type (Laptop, Mobile...)" value={newAsset.type}
+              onChange={(e) => setNewAsset({ ...newAsset, type: e.target.value })}
+              className="text-xs p-2 rounded-lg border outline-none"
+              style={{ borderColor: '#C9ADA7', backgroundColor: '#F2E9E4', color: '#22223B' }} />
+            <input placeholder="Assigned To" value={newAsset.assignedTo}
+              onChange={(e) => setNewAsset({ ...newAsset, assignedTo: e.target.value })}
+              className="text-xs p-2 rounded-lg border outline-none"
+              style={{ borderColor: '#C9ADA7', backgroundColor: '#F2E9E4', color: '#22223B' }} />
+            <input placeholder="Department" value={newAsset.dept}
+              onChange={(e) => setNewAsset({ ...newAsset, dept: e.target.value })}
+              className="text-xs p-2 rounded-lg border outline-none"
+              style={{ borderColor: '#C9ADA7', backgroundColor: '#F2E9E4', color: '#22223B' }} />
+            <select value={newAsset.condition}
+              onChange={(e) => setNewAsset({ ...newAsset, condition: e.target.value })}
+              className="text-xs p-2 rounded-lg border outline-none"
+              style={{ borderColor: '#C9ADA7', backgroundColor: '#F2E9E4', color: '#22223B' }}>
+              <option>New</option>
+              <option>Good</option>
+              <option>Fair</option>
+              <option>Poor</option>
+            </select>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={handleAddAsset}
+              className="text-xs px-4 py-2 rounded-lg font-medium"
+              style={{ backgroundColor: '#22223B', color: '#F2E9E4' }}>
+              Save
+            </button>
+            <button onClick={() => setShowForm(false)}
+              className="text-xs px-4 py-2 rounded-lg font-medium border"
+              style={{ borderColor: '#C9ADA7', color: '#4A4E69' }}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Stats */}
       <div className="grid grid-cols-4 gap-3 mb-5">
         {[
-          { label: 'Total Assets', value: '3,842', change: '+24 this month' },
-          { label: 'Assigned', value: '3,614', change: '94% utilization' },
-          { label: 'Available', value: '186', change: 'Ready to assign' },
-          { label: 'Maintenance', value: '42', change: 'Need attention', alert: true },
+          { label: 'Total Assets', value: assets.length.toString(), change: '+24 this month' },
+          { label: 'Assigned', value: assets.filter(a => a.status === 'Assigned').length.toString(), change: 'Currently in use' },
+          { label: 'Available', value: assets.filter(a => a.status === 'Available').length.toString(), change: 'Ready to assign' },
+          { label: 'Maintenance', value: assets.filter(a => a.status === 'Maintenance').length.toString(), change: 'Need attention', alert: true },
         ].map((stat) => (
           <div key={stat.label} className="p-4 rounded-xl border"
             style={{
@@ -129,39 +212,53 @@ function ITAssets() {
               ))}
             </div>
           </div>
-          <table className="w-full">
-            <thead>
-              <tr style={{ borderBottom: '1px solid #F2E9E4' }}>
-                {['ID', 'Asset', 'Type', 'Assigned To', 'Department', 'Condition', 'Status'].map((h) => (
-                  <th key={h} className="text-left pb-3 text-xs font-medium uppercase tracking-widest"
-                    style={{ color: '#9A8C98' }}>
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((asset) => (
-                <tr key={asset.id} style={{ borderBottom: '1px solid #F2E9E4' }}>
-                  <td className="py-3 text-xs" style={{ color: '#4A4E69' }}>{asset.id}</td>
-                  <td className="py-3 text-xs font-medium" style={{ color: '#22223B' }}>{asset.name}</td>
-                  <td className="py-3 text-xs" style={{ color: '#4A4E69' }}>{asset.type}</td>
-                  <td className="py-3 text-xs" style={{ color: '#4A4E69' }}>{asset.assignedTo}</td>
-                  <td className="py-3 text-xs" style={{ color: '#4A4E69' }}>{asset.dept}</td>
-                  <td className="py-3">
-                    <span className="text-xs px-2 py-0.5 rounded-full" style={conditionStyle[asset.condition]}>
-                      {asset.condition}
-                    </span>
-                  </td>
-                  <td className="py-3">
-                    <span className="text-xs px-2 py-0.5 rounded-full" style={statusStyle[asset.status]}>
-                      {asset.status}
-                    </span>
-                  </td>
+
+          {loading ? (
+            <p className="text-xs text-center py-6" style={{ color: '#9A8C98' }}>Loading assets...</p>
+          ) : filtered.length === 0 ? (
+            <p className="text-xs text-center py-6" style={{ color: '#9A8C98' }}>No assets yet. Click "+ Add Asset" to get started!</p>
+          ) : (
+            <table className="w-full">
+              <thead>
+                <tr style={{ borderBottom: '1px solid #F2E9E4' }}>
+                  {['ID', 'Asset', 'Type', 'Assigned To', 'Department', 'Condition', 'Status', 'Action'].map((h) => (
+                    <th key={h} className="text-left pb-3 text-xs font-medium uppercase tracking-widest"
+                      style={{ color: '#9A8C98' }}>
+                      {h}
+                    </th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filtered.map((asset) => (
+                  <tr key={asset.docId} style={{ borderBottom: '1px solid #F2E9E4' }}>
+                    <td className="py-3 text-xs" style={{ color: '#4A4E69' }}>{asset.id}</td>
+                    <td className="py-3 text-xs font-medium" style={{ color: '#22223B' }}>{asset.name}</td>
+                    <td className="py-3 text-xs" style={{ color: '#4A4E69' }}>{asset.type}</td>
+                    <td className="py-3 text-xs" style={{ color: '#4A4E69' }}>{asset.assignedTo}</td>
+                    <td className="py-3 text-xs" style={{ color: '#4A4E69' }}>{asset.dept}</td>
+                    <td className="py-3">
+                      <span className="text-xs px-2 py-0.5 rounded-full" style={conditionStyle[asset.condition] || conditionStyle.Good}>
+                        {asset.condition}
+                      </span>
+                    </td>
+                    <td className="py-3">
+                      <span className="text-xs px-2 py-0.5 rounded-full" style={statusStyle[asset.status] || statusStyle.Available}>
+                        {asset.status}
+                      </span>
+                    </td>
+                    <td className="py-3">
+                      <button onClick={() => handleDeleteAsset(asset.docId)}
+                        className="text-xs px-2 py-1 rounded-lg"
+                        style={{ backgroundColor: '#fef2f2', color: '#dc2626' }}>
+                        ✕
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       )}
 

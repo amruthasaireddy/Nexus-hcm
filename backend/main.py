@@ -121,3 +121,85 @@ async def add_employee(employee: Employee):
 async def delete_employee(doc_id: str):
     fdb.collection('employees').document(doc_id).delete()
     return {"message": "Employee deleted"}
+class Asset(BaseModel):
+    name: str
+    type: str
+    assignedTo: str
+    dept: str
+    condition: str
+
+@app.get("/assets")
+async def get_assets():
+    docs = fdb.collection('assets').stream()
+    assets = []
+    for doc in docs:
+        asset = doc.to_dict()
+        asset['docId'] = doc.id
+        assets.append(asset)
+    return assets
+
+@app.post("/assets")
+async def add_asset(asset: Asset):
+    count = len(list(fdb.collection('assets').stream()))
+    asset_data = {
+        "id": f"AST{str(count + 1).zfill(3)}",
+        "name": asset.name,
+        "type": asset.type,
+        "assignedTo": asset.assignedTo,
+        "dept": asset.dept,
+        "condition": asset.condition,
+        "status": "Assigned" if asset.assignedTo != "Unassigned" else "Available",
+        "purchased": "Just added"
+    }
+    doc_ref = fdb.collection('assets').add(asset_data)
+    asset_data['docId'] = doc_ref[1].id
+    return asset_data
+
+@app.delete("/assets/{doc_id}")
+async def delete_asset(doc_id: str):
+    fdb.collection('assets').document(doc_id).delete()
+    return {"message": "Asset deleted"}
+class OnboardingEmployee(BaseModel):
+    name: str
+    role: str
+    dept: str
+    startDate: str
+
+@app.get("/onboarding")
+async def get_onboarding():
+    docs = fdb.collection('onboarding').stream()
+    items = []
+    for doc in docs:
+        item = doc.to_dict()
+        item['docId'] = doc.id
+        items.append(item)
+    return items
+
+@app.post("/onboarding")
+async def add_onboarding(emp: OnboardingEmployee):
+    count = len(list(fdb.collection('onboarding').stream()))
+    data = {
+        "id": f"ONB{str(count + 1).zfill(3)}",
+        "name": emp.name,
+        "role": emp.role,
+        "dept": emp.dept,
+        "startDate": emp.startDate,
+        "progress": 0,
+        "currentStep": "Document Verification",
+        "initials": "".join([n[0] for n in emp.name.split()[:2]]).upper(),
+        "steps": [
+            {"name": "Document Verification", "status": "Active"},
+            {"name": "System Access", "status": "Pending"},
+            {"name": "IT Setup", "status": "Pending"},
+            {"name": "Team Introduction", "status": "Pending"},
+            {"name": "Training Program", "status": "Pending"},
+        ]
+    }
+    doc_ref = fdb.collection('onboarding').add(data)
+    data['docId'] = doc_ref[1].id
+    return data
+
+@app.delete("/onboarding/{doc_id}")
+async def delete_onboarding(doc_id: str):
+    fdb.collection('onboarding').document(doc_id).delete()
+    return {"message": "Onboarding deleted"}
