@@ -1,12 +1,5 @@
-import React, { useState} from 'react'; 
-const employees = [
-  { id: 'EMP001', name: 'Ravi Kumar', role: 'Software Engineer', dept: 'Engineering', access: 'Standard', status: 'Active', lastLogin: '2 mins ago', risk: 'Low' },
-  { id: 'EMP002', name: 'Priya Sharma', role: 'HR Manager', dept: 'Human Resources', access: 'Admin', status: 'Active', lastLogin: '1 hour ago', risk: 'Low' },
-  { id: 'EMP003', name: 'Arjun Mehta', role: 'DevOps Lead', dept: 'Engineering', access: 'Super Admin', status: 'Flagged', lastLogin: '5 mins ago', risk: 'High' },
-  { id: 'EMP004', name: 'Sneha Reddy', role: 'Product Manager', dept: 'Product', access: 'Standard', status: 'Active', lastLogin: '30 mins ago', risk: 'Low' },
-  { id: 'EMP005', name: 'Kiran Patel', role: 'Data Analyst', dept: 'Analytics', access: 'Read Only', status: 'Inactive', lastLogin: '3 days ago', risk: 'Medium' },
-  { id: 'EMP006', name: 'Meera Nair', role: 'Designer', dept: 'Design', access: 'Standard', status: 'Active', lastLogin: '15 mins ago', risk: 'Low' },
-];
+import React, { useState, useEffect } from 'react';
+const API = 'http://127.0.0.1:8000';
 
 const anomalies = [
   { type: 'Unusual Login Time', user: 'Arjun Mehta', detail: 'Login at 3:24 AM from unknown IP', severity: 'High', time: '2 mins ago' },
@@ -43,10 +36,57 @@ const logStyle = {
 function IdentityAccess() {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('All');
+  const [employees, setEmployees] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [newEmployee, setNewEmployee] = useState({
+    name: '', role: '', dept: '', access: 'Standard'
+  });
+
+  useEffect(() => {
+    fetchEmployees();
+  }, []);
+
+ const fetchEmployees = async () => {
+    try {
+      const res = await fetch(`${API}/employees`);
+      const data = await res.json();
+      setEmployees(data);
+      setLoading(false);
+    } catch (err) {
+      console.error('FETCH ERROR:', err);
+      setLoading(false);
+    }
+  };
+const handleAddEmployee = async () => {
+    if (!newEmployee.name || !newEmployee.role) return;
+    try {
+      const res = await fetch(`${API}/employees`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newEmployee)
+      });
+      const data = await res.json();
+      setEmployees([...employees, data]);
+      setNewEmployee({ name: '', role: '', dept: '', access: 'Standard' });
+      setShowForm(false);
+    } catch (err) {
+      console.error('SAVE ERROR:', err);
+    }
+  };
+
+  const handleDeleteEmployee = async (docId) => {
+    try {
+      await fetch(`${API}/employees/${docId}`, { method: 'DELETE' });
+      setEmployees(employees.filter(e => e.docId !== docId));
+    } catch (err) {
+      console.error('DELETE ERROR:', err);
+    }
+  };
 
   const filtered = employees.filter(emp => {
-    const matchSearch = emp.name.toLowerCase().includes(search.toLowerCase()) ||
-      emp.id.toLowerCase().includes(search.toLowerCase());
+    const matchSearch = (emp.name || '').toLowerCase().includes(search.toLowerCase()) ||
+      (emp.id || '').toLowerCase().includes(search.toLowerCase());
     const matchFilter = filter === 'All' || emp.status === filter;
     return matchSearch && matchFilter;
   });
@@ -60,16 +100,70 @@ function IdentityAccess() {
           <h1 className="text-lg font-medium" style={{ color: '#22223B' }}>Identity & Access Management</h1>
           <p className="text-xs mt-1" style={{ color: '#9A8C98' }}>AI-powered identity monitoring and access control</p>
         </div>
-        <button className="text-xs px-4 py-2 rounded-lg font-medium"
+        <button onClick={() => setShowForm(true)}
+          className="text-xs px-4 py-2 rounded-lg font-medium"
           style={{ backgroundColor: '#22223B', color: '#F2E9E4' }}>
           + Add Identity
         </button>
       </div>
 
+      {/* Add Employee Form */}
+      {showForm && (
+        <div className="p-4 rounded-xl border mb-4" style={{ backgroundColor: '#fff', borderColor: '#C9ADA7' }}>
+          <p className="text-xs uppercase tracking-widest mb-3" style={{ color: '#9A8C98' }}>Add New Identity</p>
+          <div className="grid grid-cols-4 gap-2 mb-3">
+            <input
+              placeholder="Full Name"
+              value={newEmployee.name}
+              onChange={(e) => setNewEmployee({ ...newEmployee, name: e.target.value })}
+              className="text-xs p-2 rounded-lg border outline-none"
+              style={{ borderColor: '#C9ADA7', backgroundColor: '#F2E9E4', color: '#22223B' }}
+            />
+            <input
+              placeholder="Role"
+              value={newEmployee.role}
+              onChange={(e) => setNewEmployee({ ...newEmployee, role: e.target.value })}
+              className="text-xs p-2 rounded-lg border outline-none"
+              style={{ borderColor: '#C9ADA7', backgroundColor: '#F2E9E4', color: '#22223B' }}
+            />
+            <input
+              placeholder="Department"
+              value={newEmployee.dept}
+              onChange={(e) => setNewEmployee({ ...newEmployee, dept: e.target.value })}
+              className="text-xs p-2 rounded-lg border outline-none"
+              style={{ borderColor: '#C9ADA7', backgroundColor: '#F2E9E4', color: '#22223B' }}
+            />
+            <select
+              value={newEmployee.access}
+              onChange={(e) => setNewEmployee({ ...newEmployee, access: e.target.value })}
+              className="text-xs p-2 rounded-lg border outline-none"
+              style={{ borderColor: '#C9ADA7', backgroundColor: '#F2E9E4', color: '#22223B' }}
+            >
+              <option>Standard</option>
+              <option>Admin</option>
+              <option>Super Admin</option>
+              <option>Read Only</option>
+            </select>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={handleAddEmployee}
+              className="text-xs px-4 py-2 rounded-lg font-medium"
+              style={{ backgroundColor: '#22223B', color: '#F2E9E4' }}>
+              Save
+            </button>
+            <button onClick={() => setShowForm(false)}
+              className="text-xs px-4 py-2 rounded-lg font-medium border"
+              style={{ borderColor: '#C9ADA7', color: '#4A4E69' }}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Stats */}
       <div className="grid grid-cols-4 gap-3 mb-5">
         {[
-          { label: 'Total Identities', value: '1,284', change: '+12 this month' },
+          { label: 'Total Identities', value: employees.length.toString(), change: '+12 this month' },
           { label: 'Active Sessions', value: '847', change: 'Right now' },
           { label: 'AI Anomalies', value: '3', change: 'Needs review', alert: true },
           { label: 'Access Policies', value: '24', change: 'Configured' },
@@ -121,7 +215,6 @@ function IdentityAccess() {
             Identity Registry
           </p>
           <div className="flex gap-2">
-            {/* Search */}
             <input
               type="text"
               placeholder="Search employee..."
@@ -130,7 +223,6 @@ function IdentityAccess() {
               className="text-xs px-3 py-1.5 rounded-lg border outline-none"
               style={{ borderColor: '#C9ADA7', color: '#22223B', backgroundColor: '#F2E9E4' }}
             />
-            {/* Filter */}
             {['All', 'Active', 'Flagged', 'Inactive'].map((f) => (
               <button key={f}
                 onClick={() => setFilter(f)}
@@ -146,49 +238,61 @@ function IdentityAccess() {
           </div>
         </div>
 
-        {/* Table */}
-        <table className="w-full">
-          <thead>
-            <tr style={{ borderBottom: '1px solid #F2E9E4' }}>
-              {['ID', 'Name', 'Role', 'Department', 'Access Level', 'Last Login', 'Risk', 'Status'].map((h) => (
-                <th key={h} className="text-left pb-3 text-xs font-medium uppercase tracking-widest"
-                  style={{ color: '#9A8C98' }}>
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((emp) => (
-              <tr key={emp.id} style={{ borderBottom: '1px solid #F2E9E4' }}>
-                <td className="py-3 text-xs font-medium" style={{ color: '#4A4E69' }}>{emp.id}</td>
-                <td className="py-3">
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium"
-                      style={{ backgroundColor: '#22223B', color: '#F2E9E4' }}>
-                      {emp.name.split(' ').map(n => n[0]).join('')}
-                    </div>
-                    <span className="text-xs font-medium" style={{ color: '#22223B' }}>{emp.name}</span>
-                  </div>
-                </td>
-                <td className="py-3 text-xs" style={{ color: '#4A4E69' }}>{emp.role}</td>
-                <td className="py-3 text-xs" style={{ color: '#4A4E69' }}>{emp.dept}</td>
-                <td className="py-3 text-xs" style={{ color: '#4A4E69' }}>{emp.access}</td>
-                <td className="py-3 text-xs" style={{ color: '#9A8C98' }}>{emp.lastLogin}</td>
-                <td className="py-3">
-                  <span className="text-xs px-2 py-0.5 rounded-full" style={riskStyle[emp.risk]}>
-                    {emp.risk}
-                  </span>
-                </td>
-                <td className="py-3">
-                  <span className="text-xs px-2 py-0.5 rounded-full" style={statusStyle[emp.status]}>
-                    {emp.status}
-                  </span>
-                </td>
+        {loading ? (
+          <p className="text-xs text-center py-6" style={{ color: '#9A8C98' }}>Loading employees...</p>
+        ) : filtered.length === 0 ? (
+          <p className="text-xs text-center py-6" style={{ color: '#9A8C98' }}>No employees yet. Click "+ Add Identity" to get started!</p>
+        ) : (
+          <table className="w-full">
+            <thead>
+              <tr style={{ borderBottom: '1px solid #F2E9E4' }}>
+                {['ID', 'Name', 'Role', 'Department', 'Access Level', 'Last Login', 'Risk', 'Status', 'Action'].map((h) => (
+                  <th key={h} className="text-left pb-3 text-xs font-medium uppercase tracking-widest"
+                    style={{ color: '#9A8C98' }}>
+                    {h}
+                  </th>
+                ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {filtered.map((emp) => (
+                <tr key={emp.docId} style={{ borderBottom: '1px solid #F2E9E4' }}>
+                  <td className="py-3 text-xs font-medium" style={{ color: '#4A4E69' }}>{emp.id}</td>
+                  <td className="py-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium"
+                        style={{ backgroundColor: '#22223B', color: '#F2E9E4' }}>
+                        {(emp.name || '').split(' ').map(n => n[0]).join('')}
+                      </div>
+                      <span className="text-xs font-medium" style={{ color: '#22223B' }}>{emp.name}</span>
+                    </div>
+                  </td>
+                  <td className="py-3 text-xs" style={{ color: '#4A4E69' }}>{emp.role}</td>
+                  <td className="py-3 text-xs" style={{ color: '#4A4E69' }}>{emp.dept}</td>
+                  <td className="py-3 text-xs" style={{ color: '#4A4E69' }}>{emp.access}</td>
+                  <td className="py-3 text-xs" style={{ color: '#9A8C98' }}>{emp.lastLogin}</td>
+                  <td className="py-3">
+                    <span className="text-xs px-2 py-0.5 rounded-full" style={riskStyle[emp.risk] || riskStyle.Low}>
+                      {emp.risk || 'Low'}
+                    </span>
+                  </td>
+                  <td className="py-3">
+                    <span className="text-xs px-2 py-0.5 rounded-full" style={statusStyle[emp.status] || statusStyle.Active}>
+                      {emp.status || 'Active'}
+                    </span>
+                  </td>
+                  <td className="py-3">
+                    <button onClick={() => handleDeleteEmployee(emp.docId)}
+                      className="text-xs px-2 py-1 rounded-lg"
+                      style={{ backgroundColor: '#fef2f2', color: '#dc2626' }}>
+                      ✕
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
 
       {/* Access Logs */}

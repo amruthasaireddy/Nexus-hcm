@@ -4,6 +4,12 @@ from pydantic import BaseModel
 from groq import Groq
 import os
 from dotenv import load_dotenv
+import firebase_admin
+from firebase_admin import credentials, firestore
+
+cred = credentials.Certificate("firebase-key.json")
+firebase_admin.initialize_app(cred)
+fdb = firestore.client()
 
 load_dotenv()
 
@@ -78,3 +84,40 @@ Give a brief 2-3 sentence insight or recommendation.
         max_tokens=150
     )
     return {"answer": response.choices[0].message.content}
+class Employee(BaseModel):
+    name: str
+    role: str
+    dept: str
+    access: str
+
+@app.get("/employees")
+async def get_employees():
+    docs = fdb.collection('employees').stream()
+    employees = []
+    for doc in docs:
+        emp = doc.to_dict()
+        emp['docId'] = doc.id
+        employees.append(emp)
+    return employees
+
+@app.post("/employees")
+async def add_employee(employee: Employee):
+    count = len(list(fdb.collection('employees').stream()))
+    emp_data = {
+        "id": f"EMP{str(count + 1).zfill(3)}",
+        "name": employee.name,
+        "role": employee.role,
+        "dept": employee.dept,
+        "access": employee.access,
+        "status": "Active",
+        "lastLogin": "Just now",
+        "risk": "Low"
+    }
+    doc_ref = fdb.collection('employees').add(emp_data)
+    emp_data['docId'] = doc_ref[1].id
+    return emp_data
+
+@app.delete("/employees/{doc_id}")
+async def delete_employee(doc_id: str):
+    fdb.collection('employees').document(doc_id).delete()
+    return {"message": "Employee deleted"}
