@@ -203,3 +203,87 @@ async def add_onboarding(emp: OnboardingEmployee):
 async def delete_onboarding(doc_id: str):
     fdb.collection('onboarding').document(doc_id).delete()
     return {"message": "Onboarding deleted"}
+class OffboardingEmployee(BaseModel):
+    name: str
+    role: str
+    dept: str
+    lastDay: str
+    reason: str
+
+@app.get("/offboarding")
+async def get_offboarding():
+    docs = fdb.collection('offboarding').stream()
+    items = []
+    for doc in docs:
+        item = doc.to_dict()
+        item['docId'] = doc.id
+        items.append(item)
+    return items
+
+@app.post("/offboarding")
+async def add_offboarding(emp: OffboardingEmployee):
+    count = len(list(fdb.collection('offboarding').stream()))
+    data = {
+        "id": f"OFF{str(count + 1).zfill(3)}",
+        "name": emp.name,
+        "role": emp.role,
+        "dept": emp.dept,
+        "lastDay": emp.lastDay,
+        "reason": emp.reason,
+        "progress": 0,
+        "initials": "".join([n[0] for n in emp.name.split()[:2]]).upper(),
+        "steps": [
+            {"name": "Resignation Accepted", "status": "Active"},
+            {"name": "Knowledge Transfer", "status": "Pending"},
+            {"name": "Asset Return", "status": "Pending"},
+            {"name": "Exit Interview", "status": "Pending"},
+            {"name": "Account Deactivation", "status": "Pending"},
+            {"name": "Full & Final Settlement", "status": "Pending"},
+        ]
+    }
+    doc_ref = fdb.collection('offboarding').add(data)
+    data['docId'] = doc_ref[1].id
+    return data
+
+@app.delete("/offboarding/{doc_id}")
+async def delete_offboarding(doc_id: str):
+    fdb.collection('offboarding').document(doc_id).delete()
+    return {"message": "Offboarding deleted"}
+
+
+class BenefitEmployee(BaseModel):
+    name: str
+    dept: str
+    plan: str
+
+@app.get("/benefits")
+async def get_benefits():
+    docs = fdb.collection('benefits').stream()
+    items = []
+    for doc in docs:
+        item = doc.to_dict()
+        item['docId'] = doc.id
+        items.append(item)
+    return items
+
+@app.post("/benefits")
+async def add_benefit(emp: BenefitEmployee):
+    data = {
+        "id": f"EMP{str(len(list(fdb.collection('benefits').stream())) + 1).zfill(3)}",
+        "name": emp.name,
+        "dept": emp.dept,
+        "plan": emp.plan,
+        "health": True,
+        "dental": emp.plan != "Basic",
+        "vision": emp.plan == "Premium",
+        "life": emp.plan != "Basic",
+        "status": "Enrolled"
+    }
+    doc_ref = fdb.collection('benefits').add(data)
+    data['docId'] = doc_ref[1].id
+    return data
+
+@app.delete("/benefits/{doc_id}")
+async def delete_benefit(doc_id: str):
+    fdb.collection('benefits').document(doc_id).delete()
+    return {"message": "Benefit deleted"}

@@ -1,58 +1,4 @@
-import React, { useState } from 'react';
-
-const onboardingEmployees = [
-  {
-    id: 'ONB001',
-    name: 'Priya Sharma',
-    role: 'HR Manager',
-    dept: 'Human Resources',
-    startDate: '15 Jun 2026',
-    progress: 75,
-    currentStep: 'IT Setup',
-    initials: 'PS',
-    steps: [
-      { name: 'Document Verification', status: 'Done' },
-      { name: 'System Access', status: 'Done' },
-      { name: 'IT Setup', status: 'Active' },
-      { name: 'Team Introduction', status: 'Pending' },
-      { name: 'Training Program', status: 'Pending' },
-    ]
-  },
-  {
-    id: 'ONB002',
-    name: 'Dev Malhotra',
-    role: 'Marketing Lead',
-    dept: 'Marketing',
-    startDate: '16 Jun 2026',
-    progress: 40,
-    currentStep: 'System Access',
-    initials: 'DM',
-    steps: [
-      { name: 'Document Verification', status: 'Done' },
-      { name: 'System Access', status: 'Active' },
-      { name: 'IT Setup', status: 'Pending' },
-      { name: 'Team Introduction', status: 'Pending' },
-      { name: 'Training Program', status: 'Pending' },
-    ]
-  },
-  {
-    id: 'ONB003',
-    name: 'Anjali Singh',
-    role: 'Data Scientist',
-    dept: 'Analytics',
-    startDate: '17 Jun 2026',
-    progress: 20,
-    currentStep: 'Document Verification',
-    initials: 'AS',
-    steps: [
-      { name: 'Document Verification', status: 'Active' },
-      { name: 'System Access', status: 'Pending' },
-      { name: 'IT Setup', status: 'Pending' },
-      { name: 'Team Introduction', status: 'Pending' },
-      { name: 'Training Program', status: 'Pending' },
-    ]
-  },
-];
+import React, { useState, useEffect } from 'react';
 
 const tasks = [
   { task: 'Send welcome email', assignee: 'HR Team', due: 'Today', status: 'Done' },
@@ -76,7 +22,61 @@ const taskStyle = {
 };
 
 function Onboarding() {
-  const [selected, setSelected] = useState(onboardingEmployees[0]);
+  const API = 'http://127.0.0.1:8000';
+  const [onboardingEmployees, setOnboardingEmployees] = useState([]);
+  const [selected, setSelected] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [newEmployee, setNewEmployee] = useState({ name: '', role: '', dept: '', startDate: '' });
+
+  useEffect(() => {
+    fetchOnboarding();
+  }, []);
+
+  const fetchOnboarding = async () => {
+    try {
+      const res = await fetch(`${API}/onboarding`);
+      const data = await res.json();
+      setOnboardingEmployees(data);
+      if (data.length > 0) setSelected(data[0]);
+      setLoading(false);
+    } catch (err) {
+      console.error('Error fetching onboarding', err);
+      setLoading(false);
+    }
+  };
+
+  const handleAddOnboarding = async () => {
+    if (!newEmployee.name || !newEmployee.role) return;
+    try {
+      const res = await fetch(`${API}/onboarding`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newEmployee)
+      });
+      const data = await res.json();
+      const updated = [...onboardingEmployees, data];
+      setOnboardingEmployees(updated);
+      setSelected(data);
+      setNewEmployee({ name: '', role: '', dept: '', startDate: '' });
+      setShowForm(false);
+    } catch (err) {
+      console.error('Error adding onboarding', err);
+    }
+  };
+
+  const handleDeleteOnboarding = async (docId) => {
+    try {
+      await fetch(`${API}/onboarding/${docId}`, { method: 'DELETE' });
+      const updated = onboardingEmployees.filter(e => e.docId !== docId);
+      setOnboardingEmployees(updated);
+      if (selected && selected.docId === docId) {
+        setSelected(updated.length > 0 ? updated[0] : null);
+      }
+    } catch (err) {
+      console.error('Error deleting onboarding', err);
+    }
+  };
 
   return (
     <div className="p-6">
@@ -87,16 +87,54 @@ function Onboarding() {
           <h1 className="text-lg font-medium" style={{ color: '#22223B' }}>Onboarding Journey Engine</h1>
           <p className="text-xs mt-1" style={{ color: '#9A8C98' }}>Personalised onboarding journeys powered by AI</p>
         </div>
-        <button className="text-xs px-4 py-2 rounded-lg font-medium"
+        <button onClick={() => setShowForm(true)}
+          className="text-xs px-4 py-2 rounded-lg font-medium"
           style={{ backgroundColor: '#22223B', color: '#F2E9E4' }}>
           + Start Onboarding
         </button>
       </div>
 
+      {/* Add Onboarding Form */}
+      {showForm && (
+        <div className="p-4 rounded-xl border mb-4" style={{ backgroundColor: '#fff', borderColor: '#C9ADA7' }}>
+          <p className="text-xs uppercase tracking-widest mb-3" style={{ color: '#9A8C98' }}>Start New Onboarding</p>
+          <div className="grid grid-cols-4 gap-2 mb-3">
+            <input placeholder="Full Name" value={newEmployee.name}
+              onChange={(e) => setNewEmployee({ ...newEmployee, name: e.target.value })}
+              className="text-xs p-2 rounded-lg border outline-none"
+              style={{ borderColor: '#C9ADA7', backgroundColor: '#F2E9E4', color: '#22223B' }} />
+            <input placeholder="Role" value={newEmployee.role}
+              onChange={(e) => setNewEmployee({ ...newEmployee, role: e.target.value })}
+              className="text-xs p-2 rounded-lg border outline-none"
+              style={{ borderColor: '#C9ADA7', backgroundColor: '#F2E9E4', color: '#22223B' }} />
+            <input placeholder="Department" value={newEmployee.dept}
+              onChange={(e) => setNewEmployee({ ...newEmployee, dept: e.target.value })}
+              className="text-xs p-2 rounded-lg border outline-none"
+              style={{ borderColor: '#C9ADA7', backgroundColor: '#F2E9E4', color: '#22223B' }} />
+            <input placeholder="Start Date" value={newEmployee.startDate}
+              onChange={(e) => setNewEmployee({ ...newEmployee, startDate: e.target.value })}
+              className="text-xs p-2 rounded-lg border outline-none"
+              style={{ borderColor: '#C9ADA7', backgroundColor: '#F2E9E4', color: '#22223B' }} />
+          </div>
+          <div className="flex gap-2">
+            <button onClick={handleAddOnboarding}
+              className="text-xs px-4 py-2 rounded-lg font-medium"
+              style={{ backgroundColor: '#22223B', color: '#F2E9E4' }}>
+              Save
+            </button>
+            <button onClick={() => setShowForm(false)}
+              className="text-xs px-4 py-2 rounded-lg font-medium border"
+              style={{ borderColor: '#C9ADA7', color: '#4A4E69' }}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Stats */}
       <div className="grid grid-cols-4 gap-3 mb-5">
         {[
-          { label: 'Active Onboarding', value: '24', change: '8 completing today' },
+          { label: 'Active Onboarding', value: onboardingEmployees.length.toString(), change: 'Currently in progress' },
           { label: 'Avg Completion', value: '4.2d', change: 'Days to complete' },
           { label: 'AI Suggestions', value: '12', change: 'Personalised tasks' },
           { label: 'Completed', value: '186', change: 'This quarter' },
@@ -118,35 +156,48 @@ function Onboarding() {
           <p className="text-xs uppercase tracking-widest mb-4" style={{ color: '#9A8C98' }}>
             Active Journeys
           </p>
-          {onboardingEmployees.map((emp) => (
-            <div key={emp.id}
-              onClick={() => setSelected(emp)}
-              className="p-3 rounded-lg mb-2 cursor-pointer border"
-              style={{
-                backgroundColor: selected.id === emp.id ? '#F2E9E4' : '#fff',
-                borderColor: selected.id === emp.id ? '#22223B' : '#C9ADA7'
-              }}>
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium"
-                  style={{ backgroundColor: '#22223B', color: '#F2E9E4' }}>
-                  {emp.initials}
+          {loading ? (
+            <p className="text-xs text-center py-6" style={{ color: '#9A8C98' }}>Loading...</p>
+          ) : onboardingEmployees.length === 0 ? (
+            <p className="text-xs text-center py-6" style={{ color: '#9A8C98' }}>No journeys yet. Click "+ Start Onboarding"!</p>
+          ) : (
+            onboardingEmployees.map((emp) => (
+              <div key={emp.docId}
+                onClick={() => setSelected(emp)}
+                className="p-3 rounded-lg mb-2 cursor-pointer border relative"
+                style={{
+                  backgroundColor: selected && selected.docId === emp.docId ? '#F2E9E4' : '#fff',
+                  borderColor: selected && selected.docId === emp.docId ? '#22223B' : '#C9ADA7'
+                }}>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium"
+                      style={{ backgroundColor: '#22223B', color: '#F2E9E4' }}>
+                      {emp.initials}
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium" style={{ color: '#22223B' }}>{emp.name}</p>
+                      <p className="text-xs" style={{ color: '#9A8C98' }}>{emp.role}</p>
+                    </div>
+                  </div>
+                  <button onClick={(e) => { e.stopPropagation(); handleDeleteOnboarding(emp.docId); }}
+                    className="text-xs px-2 py-1 rounded-lg"
+                    style={{ backgroundColor: '#fef2f2', color: '#dc2626' }}>
+                    ✕
+                  </button>
                 </div>
-                <div>
-                  <p className="text-xs font-medium" style={{ color: '#22223B' }}>{emp.name}</p>
-                  <p className="text-xs" style={{ color: '#9A8C98' }}>{emp.role}</p>
+                <div className="flex justify-between text-xs mb-1">
+                  <span style={{ color: '#4A4E69' }}>{emp.currentStep}</span>
+                  <span style={{ color: '#22223B' }}>{emp.progress}%</span>
+                </div>
+                <div className="h-1.5 rounded-full" style={{ backgroundColor: '#F2E9E4' }}>
+                  <div className="h-1.5 rounded-full"
+                    style={{ width: `${emp.progress}%`, background: 'linear-gradient(90deg, #9A8C98, #22223B)' }}>
+                  </div>
                 </div>
               </div>
-              <div className="flex justify-between text-xs mb-1">
-                <span style={{ color: '#4A4E69' }}>{emp.currentStep}</span>
-                <span style={{ color: '#22223B' }}>{emp.progress}%</span>
-              </div>
-              <div className="h-1.5 rounded-full" style={{ backgroundColor: '#F2E9E4' }}>
-                <div className="h-1.5 rounded-full"
-                  style={{ width: `${emp.progress}%`, background: 'linear-gradient(90deg, #9A8C98, #22223B)' }}>
-                </div>
-              </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
 
         {/* Journey Details */}
@@ -155,52 +206,60 @@ function Onboarding() {
             Journey Progress
           </p>
 
-          {/* Employee Info */}
-          <div className="flex items-center gap-3 mb-4 p-3 rounded-lg"
-            style={{ backgroundColor: '#F2E9E4' }}>
-            <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium"
-              style={{ backgroundColor: '#22223B', color: '#F2E9E4' }}>
-              {selected.initials}
-            </div>
-            <div>
-              <p className="text-sm font-medium" style={{ color: '#22223B' }}>{selected.name}</p>
-              <p className="text-xs" style={{ color: '#9A8C98' }}>{selected.role} • {selected.dept}</p>
-              <p className="text-xs mt-0.5" style={{ color: '#C9ADA7' }}>Start: {selected.startDate}</p>
-            </div>
-          </div>
-
-          {/* Steps */}
-          <div className="space-y-2">
-            {selected.steps.map((step, i) => (
-              <div key={i} className="flex items-center gap-3 p-2 rounded-lg"
+          {!selected ? (
+            <p className="text-xs text-center py-6" style={{ color: '#9A8C98' }}>
+              No onboarding journeys yet. Click "+ Start Onboarding" to begin!
+            </p>
+          ) : (
+            <>
+              {/* Employee Info */}
+              <div className="flex items-center gap-3 mb-4 p-3 rounded-lg"
                 style={{ backgroundColor: '#F2E9E4' }}>
-                <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0"
-                  style={{
-                    backgroundColor: step.status === 'Done' ? '#16a34a' : step.status === 'Active' ? '#22223B' : '#C9ADA7',
-                    color: '#fff'
-                  }}>
-                  {step.status === 'Done' ? '✓' : i + 1}
+                <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium"
+                  style={{ backgroundColor: '#22223B', color: '#F2E9E4' }}>
+                  {selected.initials}
                 </div>
-                <p className="text-xs flex-1" style={{ color: '#22223B' }}>{step.name}</p>
-                <span className="text-xs px-2 py-0.5 rounded-full" style={stepStyle[step.status]}>
-                  {step.status}
-                </span>
+                <div>
+                  <p className="text-sm font-medium" style={{ color: '#22223B' }}>{selected.name}</p>
+                  <p className="text-xs" style={{ color: '#9A8C98' }}>{selected.role} • {selected.dept}</p>
+                  <p className="text-xs mt-0.5" style={{ color: '#C9ADA7' }}>Start: {selected.startDate}</p>
+                </div>
               </div>
-            ))}
-          </div>
 
-          {/* Overall Progress */}
-          <div className="mt-4 p-3 rounded-lg" style={{ backgroundColor: '#F2E9E4' }}>
-            <div className="flex justify-between text-xs mb-2">
-              <span style={{ color: '#4A4E69' }}>Overall Progress</span>
-              <span className="font-medium" style={{ color: '#22223B' }}>{selected.progress}%</span>
-            </div>
-            <div className="h-2 rounded-full" style={{ backgroundColor: '#C9ADA7' }}>
-              <div className="h-2 rounded-full"
-                style={{ width: `${selected.progress}%`, background: 'linear-gradient(90deg, #9A8C98, #22223B)' }}>
+              {/* Steps */}
+              <div className="space-y-2">
+                {(selected.steps || []).map((step, i) => (
+                  <div key={i} className="flex items-center gap-3 p-2 rounded-lg"
+                    style={{ backgroundColor: '#F2E9E4' }}>
+                    <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0"
+                      style={{
+                        backgroundColor: step.status === 'Done' ? '#16a34a' : step.status === 'Active' ? '#22223B' : '#C9ADA7',
+                        color: '#fff'
+                      }}>
+                      {step.status === 'Done' ? '✓' : i + 1}
+                    </div>
+                    <p className="text-xs flex-1" style={{ color: '#22223B' }}>{step.name}</p>
+                    <span className="text-xs px-2 py-0.5 rounded-full" style={stepStyle[step.status]}>
+                      {step.status}
+                    </span>
+                  </div>
+                ))}
               </div>
-            </div>
-          </div>
+
+              {/* Overall Progress */}
+              <div className="mt-4 p-3 rounded-lg" style={{ backgroundColor: '#F2E9E4' }}>
+                <div className="flex justify-between text-xs mb-2">
+                  <span style={{ color: '#4A4E69' }}>Overall Progress</span>
+                  <span className="font-medium" style={{ color: '#22223B' }}>{selected.progress}%</span>
+                </div>
+                <div className="h-2 rounded-full" style={{ backgroundColor: '#C9ADA7' }}>
+                  <div className="h-2 rounded-full"
+                    style={{ width: `${selected.progress}%`, background: 'linear-gradient(90deg, #9A8C98, #22223B)' }}>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Tasks & AI */}
@@ -234,8 +293,8 @@ function Onboarding() {
             <div className="space-y-2">
               {[
                 'Schedule 1:1 with manager on Day 3',
-                'Assign Python training for Data role',
-                'Add to Analytics Slack channel',
+                'Assign Python training for new role',
+                'Add to department Slack channel',
               ].map((s, i) => (
                 <div key={i} className="flex items-start gap-2 p-2 rounded-lg"
                   style={{ backgroundColor: '#fff' }}>
