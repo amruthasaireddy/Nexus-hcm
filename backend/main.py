@@ -346,3 +346,21 @@ async def add_department(dept: Department):
 async def delete_department(doc_id: str):
     fdb.collection('departments').document(doc_id).delete()
     return {"message": "Department deleted"}
+class CeoInfo(BaseModel):
+    name: str
+    title: str
+
+@app.get("/ceo")
+async def get_ceo():
+    doc = fdb.collection('settings').document('ceo').get()
+    if doc.exists:
+        return doc.to_dict()
+    return {"name": "Vikram Singh", "title": "Chief Executive Officer"}
+
+@app.post("/ceo")
+async def update_ceo(ceo: CeoInfo):
+    fdb.collection('settings').document('ceo').set({
+        "name": ceo.name,
+        "title": ceo.title
+    })
+    return {"name": ceo.name, "title": ceo.title}

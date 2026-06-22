@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+ 
 
 const healthStyle = {
   Healthy: { backgroundColor: '#f0fdf4', color: '#16a34a', border: '1px solid #86efac' },
@@ -13,11 +14,41 @@ function Organisation() {
   const [activeTab, setActiveTab] = useState('Departments');
   const [showForm, setShowForm] = useState(false);
   const [newDept, setNewDept] = useState({ name: '', head: '', employees: '', budget: '' });
+  const [ceo, setCeo] = useState({ name: 'Vikram Singh', title: 'Chief Executive Officer' });
+const [editCeo, setEditCeo] = useState(false);
+const [newCeo, setNewCeo] = useState({ name: '', title: '' });
 
-  useEffect(() => {
-    fetchDepartments();
-  }, []);
+ useEffect(() => {
+  fetchDepartments();
+  fetchCeo();
+}, []);
 
+const fetchCeo = async () => {
+  try {
+    const res = await fetch(`${API}/ceo`);
+    const data = await res.json();
+    setCeo(data);
+  } catch (err) {
+    console.error('Error fetching CEO', err);
+  }
+};
+
+const handleUpdateCeo = async () => {
+  if (!newCeo.name || !newCeo.title) return;
+  try {
+    const res = await fetch(`${API}/ceo`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newCeo)
+    });
+    const data = await res.json();
+    setCeo(data);
+    setEditCeo(false);
+    setNewCeo({ name: '', title: '' });
+  } catch (err) {
+    console.error('Error updating CEO', err);
+  }
+};
   const fetchDepartments = async () => {
     try {
       const res = await fetch(`${API}/departments`);
@@ -219,15 +250,50 @@ function Organisation() {
             Organisation Hierarchy
           </p>
 
-          <div className="flex justify-center mb-6">
-            <div className="p-4 rounded-xl border text-center w-48"
-              style={{ backgroundColor: '#22223B', borderColor: '#22223B' }}>
-              <div className="w-10 h-10 rounded-full mx-auto mb-2 flex items-center justify-center text-sm font-medium"
-                style={{ backgroundColor: '#4A4E69', color: '#F2E9E4' }}>VS</div>
-              <p className="text-sm font-medium" style={{ color: '#F2E9E4' }}>Vikram Singh</p>
-              <p className="text-xs mt-1" style={{ color: '#9A8C98' }}>Chief Executive Officer</p>
-            </div>
-          </div>
+           <div className="flex flex-col items-center mb-6">
+  <div className="p-4 rounded-xl border text-center w-48 relative"
+    style={{ backgroundColor: '#22223B', borderColor: '#22223B' }}>
+    <div className="w-10 h-10 rounded-full mx-auto mb-2 flex items-center justify-center text-sm font-medium"
+      style={{ backgroundColor: '#4A4E69', color: '#F2E9E4' }}>
+      {ceo.name.split(' ').map(n => n[0]).join('')}
+    </div>
+    <p className="text-sm font-medium" style={{ color: '#F2E9E4' }}>{ceo.name}</p>
+    <p className="text-xs mt-1" style={{ color: '#9A8C98' }}>{ceo.title}</p>
+    <button onClick={() => { setEditCeo(true); setNewCeo({ name: ceo.name, title: ceo.title }); }}
+      className="text-xs mt-2 px-2 py-0.5 rounded-lg"
+      style={{ backgroundColor: '#4A4E69', color: '#F2E9E4' }}>
+      ✏️ Edit
+    </button>
+  </div>
+
+  {/* Edit CEO Form */}
+  {editCeo && (
+    <div className="mt-3 p-3 rounded-xl border w-72"
+      style={{ backgroundColor: '#fff', borderColor: '#C9ADA7' }}>
+      <p className="text-xs uppercase tracking-widest mb-2" style={{ color: '#9A8C98' }}>Edit CEO</p>
+      <input placeholder="CEO Name" value={newCeo.name}
+        onChange={(e) => setNewCeo({ ...newCeo, name: e.target.value })}
+        className="w-full text-xs p-2 rounded-lg border outline-none mb-2"
+        style={{ borderColor: '#C9ADA7', backgroundColor: '#F2E9E4', color: '#22223B' }} />
+      <input placeholder="Title" value={newCeo.title}
+        onChange={(e) => setNewCeo({ ...newCeo, title: e.target.value })}
+        className="w-full text-xs p-2 rounded-lg border outline-none mb-2"
+        style={{ borderColor: '#C9ADA7', backgroundColor: '#F2E9E4', color: '#22223B' }} />
+      <div className="flex gap-2">
+        <button onClick={handleUpdateCeo}
+          className="text-xs px-3 py-1.5 rounded-lg font-medium"
+          style={{ backgroundColor: '#22223B', color: '#F2E9E4' }}>
+          Save
+        </button>
+        <button onClick={() => setEditCeo(false)}
+          className="text-xs px-3 py-1.5 rounded-lg border"
+          style={{ borderColor: '#C9ADA7', color: '#4A4E69' }}>
+          Cancel
+        </button>
+      </div>
+    </div>
+  )}
+</div>
 
           <div className="flex justify-center mb-4">
             <div className="w-px h-8" style={{ backgroundColor: '#C9ADA7' }}></div>
